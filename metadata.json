@@ -1,0 +1,6 @@
+{
+  "name": "BlueChat",
+  "description": "Offline-first P2P mesh messaging ecosystem with zero-pairing BLE, Bluetooth Classic, Wi-Fi LAN bridge, and offline APK distribution",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
