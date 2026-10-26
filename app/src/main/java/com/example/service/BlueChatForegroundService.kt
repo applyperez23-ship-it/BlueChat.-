@@ -17,6 +17,7 @@ class BlueChatForegroundService : Service() {
     companion object {
         const val CHANNEL_ID = "bluechat_mesh_channel"
         const val NOTIFICATION_ID = 1001
+        const val ACTION_STOP_SERVICE = "com.example.service.ACTION_STOP_SERVICE"
 
         fun startService(context: Context) {
             val intent = Intent(context, BlueChatForegroundService::class.java)
@@ -28,8 +29,10 @@ class BlueChatForegroundService : Service() {
         }
 
         fun stopService(context: Context) {
-            val intent = Intent(context, BlueChatForegroundService::class.java)
-            context.stopService(intent)
+            val intent = Intent(context, BlueChatForegroundService::class.java).apply {
+                action = ACTION_STOP_SERVICE
+            }
+            context.startService(intent)
         }
     }
 
@@ -44,6 +47,17 @@ class BlueChatForegroundService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (intent?.action == ACTION_STOP_SERVICE) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                stopForeground(STOP_FOREGROUND_REMOVE)
+            } else {
+                @Suppress("DEPRECATION")
+                stopForeground(true)
+            }
+            stopSelf()
+            return START_NOT_STICKY
+        }
+
         val notification = buildForegroundNotification()
         startForeground(NOTIFICATION_ID, notification)
         return START_STICKY
@@ -73,12 +87,24 @@ class BlueChatForegroundService : Service() {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
+        // Action PendingIntent to stop service from notification
+        val stopIntent = Intent(this, BlueChatForegroundService::class.java).apply {
+            action = ACTION_STOP_SERVICE
+        }
+        val stopPendingIntent = PendingIntent.getService(
+            this,
+            1,
+            stopIntent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("BlueChat activo")
-            .setContentText("Red Mesh funcionando • Conexión P2P local lista")
+            .setContentTitle("BlueChat en Línea")
+            .setContentText("BlueChat en Línea")
             .setSmallIcon(android.R.drawable.stat_notify_sync)
             .setContentIntent(pendingIntent)
             .setOngoing(true)
+            .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Detener", stopPendingIntent)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
             .build()

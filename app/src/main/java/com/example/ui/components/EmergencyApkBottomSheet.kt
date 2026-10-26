@@ -3,6 +3,7 @@ package com.example.ui.components
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
+import android.provider.Settings
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -19,6 +20,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.WifiTethering
@@ -30,7 +32,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -50,6 +51,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
 import com.example.server.QrCodeGenerator
 import com.example.ui.theme.BlueChatPrimary
+import com.example.ui.theme.BlueChatSecondary
 import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -95,12 +97,66 @@ fun EmergencyApkBottomSheet(
                 )
             }
 
+            // Required Step Card: Activate Hotspot
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.WifiTethering,
+                            contentDescription = null,
+                            tint = BlueChatPrimary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Paso 1: Activa tu Zona Wi-Fi (Hotspot)",
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                            color = BlueChatPrimary
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Text(
+                        text = "Para que otros teléfonos descarguen el APK sin internet, debes activar tu Punto de Acceso Wi-Fi y pedirles que se conecten a él.",
+                        style = MaterialTheme.typography.bodySmall.copy(lineHeight = 18.sp),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Button(
+                        onClick = {
+                            openHotspotSettings(context)
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = BlueChatPrimary),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("open_hotspot_settings_button")
+                    ) {
+                        Icon(imageVector = Icons.Default.WifiTethering, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Activar Zona Wi-Fi / Hotspot")
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Icon(imageVector = Icons.Default.ArrowForward, contentDescription = null, modifier = Modifier.size(16.dp))
+                    }
+                }
+            }
+
             Text(
-                text = "Cualquier persona puede instalar BlueChat conectándose a tu punto de acceso Wi-Fi portátil sin consumir datos ni saldo.",
-                style = MaterialTheme.typography.bodyMedium,
+                text = "Paso 2: Haz que la otra persona se conecte a tu Wi-Fi y escanee este código QR:",
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
                 textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 20.dp)
+                modifier = Modifier.padding(bottom = 16.dp)
             )
 
             // QR Code Container
@@ -133,7 +189,7 @@ fun EmergencyApkBottomSheet(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "Dirección de descarga directa en navegador:",
+                        text = "O que visite esta dirección en su navegador:",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -149,7 +205,7 @@ fun EmergencyApkBottomSheet(
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             Button(
                 onClick = {
@@ -158,14 +214,31 @@ fun EmergencyApkBottomSheet(
                 modifier = Modifier
                     .fillMaxWidth()
                     .testTag("share_apk_button"),
-                colors = ButtonDefaults.buttonColors(containerColor = BlueChatPrimary),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                 shape = RoundedCornerShape(14.dp)
             ) {
-                Icon(imageVector = Icons.Default.Share, contentDescription = null)
+                Icon(imageVector = Icons.Default.Share, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Compartir archivo APK por Bluetooth")
+                Text("Compartir archivo APK por Bluetooth / Sistema", color = MaterialTheme.colorScheme.onSurface)
             }
         }
+    }
+}
+
+private fun openHotspotSettings(context: Context) {
+    try {
+        val intent = Intent().apply {
+            action = "android.settings.TETHER_SETTINGS"
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        }
+        context.startActivity(intent)
+    } catch (e: Exception) {
+        try {
+            val fallback = Intent(Settings.ACTION_WIRELESS_SETTINGS).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            context.startActivity(fallback)
+        } catch (ignored: Exception) {}
     }
 }
 

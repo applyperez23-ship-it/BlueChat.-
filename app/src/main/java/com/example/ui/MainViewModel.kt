@@ -261,6 +261,56 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun sendAudioMessage(durationSeconds: Long) {
+        val targetChatId = _activeChatId.value ?: return
+        val duration = durationSeconds.coerceAtLeast(1L)
+        val minutes = duration / 60
+        val seconds = duration % 60
+        val timeLabel = String.format("%02d:%02d", minutes, seconds)
+        val isGeneral = (targetChatId == "general_channel")
+
+        val messageId = UUID.randomUUID().toString()
+        val text = "Nota de voz ($timeLabel)"
+
+        viewModelScope.launch(Dispatchers.IO) {
+            val msg = MessageEntity(
+                messageId = messageId,
+                chatId = targetChatId,
+                senderId = myPeerId,
+                senderName = _myNickname.value,
+                recipientId = if (isGeneral) "ALL" else targetChatId,
+                textPayload = text,
+                timestamp = System.currentTimeMillis(),
+                status = MessageEntity.STATUS_SENT,
+                fileName = "audio_${System.currentTimeMillis()}.m4a",
+                fileSize = duration * 16000L,
+                filePath = null,
+                waitingWifi = false
+            )
+            repository.insertMessage(msg)
+
+            val chat = ChatEntity(
+                chatId = targetChatId,
+                peerId = targetChatId,
+                displayName = if (isGeneral) "Canal General" else _activeChatPeerName.value,
+                unreadCount = 0,
+                lastMessageTimestamp = System.currentTimeMillis(),
+                lastMessageSnippet = "Nota de voz ($timeLabel)",
+                lastMessageStatus = MessageEntity.STATUS_SENT
+            )
+            repository.insertOrUpdateChat(chat)
+
+            meshEngine.sendChatMessage(
+                recipientId = if (isGeneral) "ALL" else targetChatId,
+                recipientName = _activeChatPeerName.value,
+                text = text,
+                isGeneral = isGeneral,
+                isContactsOnly = false,
+                isPriority = false
+            )
+        }
+    }
+
     fun deleteChat(chatId: String) {
         viewModelScope.launch(Dispatchers.IO) {
             repository.deleteChat(chatId)

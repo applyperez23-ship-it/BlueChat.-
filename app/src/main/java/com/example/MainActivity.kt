@@ -355,6 +355,7 @@ fun BlueChatApp(viewModel: MainViewModel) {
                                     onBack = { viewModel.closeChat() },
                                     onSendMessage = { viewModel.sendMessage(it) },
                                     onSendFile = { name, size, path -> viewModel.sendFileMessage(name, size, path) },
+                                    onSendAudio = { duration -> viewModel.sendAudioMessage(duration) },
                                     onStartCall = { isVideo -> viewModel.startCall(activeChatId!!, activeChatPeerName, isVideo) },
                                     onSenderClick = { user -> viewModel.selectSenderForCard(user) }
                                 )
@@ -383,6 +384,7 @@ fun BlueChatApp(viewModel: MainViewModel) {
                             onBack = { viewModel.closeChat() },
                             onSendMessage = { viewModel.sendMessage(it) },
                             onSendFile = { name, size, path -> viewModel.sendFileMessage(name, size, path) },
+                            onSendAudio = { duration -> viewModel.sendAudioMessage(duration) },
                             onStartCall = { isVideo -> viewModel.startCall(activeChatId!!, activeChatPeerName, isVideo) },
                             onSenderClick = { user -> viewModel.selectSenderForCard(user) }
                         )

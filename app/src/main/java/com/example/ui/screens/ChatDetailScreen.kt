@@ -2,6 +2,12 @@ package com.example.ui.screens
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -27,7 +33,10 @@ import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Campaign
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.PriorityHigh
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.filled.Wifi
@@ -47,11 +56,13 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -67,6 +78,7 @@ import com.example.ui.theme.IncomingBubbleDark
 import com.example.ui.theme.IncomingBubbleLight
 import com.example.ui.theme.OutgoingBubbleDark
 import com.example.ui.theme.OutgoingBubbleLight
+import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -81,6 +93,7 @@ fun ChatDetailScreen(
     onBack: () -> Unit,
     onSendMessage: (String) -> Unit,
     onSendFile: (fileName: String, fileSize: Long, filePath: String) -> Unit,
+    onSendAudio: (durationSeconds: Long) -> Unit,
     onStartCall: (isVideo: Boolean) -> Unit,
     onSenderClick: (UserEntity) -> Unit,
     modifier: Modifier = Modifier
@@ -90,6 +103,20 @@ fun ChatDetailScreen(
     val isGeneral = chatId == "general_channel"
     var inputText by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
+
+    // Quick Voice Note Recording State
+    var isRecordingAudio by remember { mutableStateOf(false) }
+    var recordingSeconds by remember { mutableLongStateOf(0L) }
+
+    LaunchedEffect(isRecordingAudio) {
+        if (isRecordingAudio) {
+            recordingSeconds = 0L
+            while (isRecordingAudio) {
+                delay(1000)
+                recordingSeconds += 1
+            }
+        }
+    }
 
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) {
@@ -246,61 +273,151 @@ fun ChatDetailScreen(
             tonalElevation = 3.dp,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 10.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Attach file button
-                IconButton(
-                    onClick = {
-                        // Queue large file transfer
-                        onSendFile("Foto_BlueChat_${System.currentTimeMillis() % 1000}.jpg", 2_450_000L, "/storage/emulated/0/Download/photo.jpg")
-                    },
-                    modifier = Modifier.testTag("attach_file_button")
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.AttachFile,
-                        contentDescription = "Adjuntar archivo",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                OutlinedTextField(
-                    value = inputText,
-                    onValueChange = { inputText = it },
-                    placeholder = { Text("Escribe un mensaje...") },
-                    maxLines = 4,
-                    shape = RoundedCornerShape(24.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f)
+            if (isRecordingAudio) {
+                // Quick Audio Recording Bar
+                val infiniteTransition = rememberInfiniteTransition(label = "audio_rec_pulse")
+                val pulseScale by infiniteTransition.animateFloat(
+                    initialValue = 1f,
+                    targetValue = 1.3f,
+                    animationSpec = infiniteRepeatable(
+                        animation = tween(600, easing = FastOutSlowInEasing),
+                        repeatMode = RepeatMode.Reverse
                     ),
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(horizontal = 4.dp)
-                        .testTag("message_input_field")
+                    label = "pulse"
                 )
 
-                FilledIconButton(
-                    onClick = {
-                        if (inputText.isNotBlank()) {
-                            onSendMessage(inputText)
-                            inputText = ""
-                        }
-                    },
+                val recMin = recordingSeconds / 60
+                val recSec = recordingSeconds % 60
+                val timerString = String.format("%02d:%02d", recMin, recSec)
+
+                Row(
                     modifier = Modifier
-                        .size(46.dp)
-                        .testTag("send_message_button"),
-                    colors = IconButtonDefaults.filledIconButtonColors(containerColor = BlueChatPrimary)
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.Send,
-                        contentDescription = "Enviar mensaje",
-                        tint = Color.White,
-                        modifier = Modifier.size(20.dp)
+                    IconButton(
+                        onClick = {
+                            isRecordingAudio = false
+                        },
+                        modifier = Modifier.testTag("cancel_audio_recording_button")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Descartar audio",
+                            tint = Color(0xFFFF5252)
+                        )
+                    }
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(12.dp)
+                                .scale(pulseScale)
+                                .background(Color(0xFFFF5252), CircleShape)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Grabando audio rápido... $timerString",
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                            color = Color(0xFFFF5252)
+                        )
+                    }
+
+                    FilledIconButton(
+                        onClick = {
+                            val duration = recordingSeconds
+                            isRecordingAudio = false
+                            onSendAudio(duration)
+                        },
+                        colors = IconButtonDefaults.filledIconButtonColors(containerColor = BlueChatPrimary),
+                        modifier = Modifier
+                            .size(46.dp)
+                            .testTag("send_audio_button")
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Send,
+                            contentDescription = "Enviar nota de voz",
+                            tint = Color.White,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+            } else {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 10.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Attach file button
+                    IconButton(
+                        onClick = {
+                            onSendFile("Foto_BlueChat_${System.currentTimeMillis() % 1000}.jpg", 2_450_000L, "/storage/emulated/0/Download/photo.jpg")
+                        },
+                        modifier = Modifier.testTag("attach_file_button")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AttachFile,
+                            contentDescription = "Adjuntar archivo",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    OutlinedTextField(
+                        value = inputText,
+                        onValueChange = { inputText = it },
+                        placeholder = { Text("Escribe un mensaje...") },
+                        maxLines = 4,
+                        shape = RoundedCornerShape(24.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f)
+                        ),
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(horizontal = 4.dp)
+                            .testTag("message_input_field")
                     )
+
+                    if (inputText.isNotBlank()) {
+                        FilledIconButton(
+                            onClick = {
+                                onSendMessage(inputText)
+                                inputText = ""
+                            },
+                            modifier = Modifier
+                                .size(46.dp)
+                                .testTag("send_message_button"),
+                            colors = IconButtonDefaults.filledIconButtonColors(containerColor = BlueChatPrimary)
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.Send,
+                                contentDescription = "Enviar mensaje",
+                                tint = Color.White,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    } else {
+                        // Quick Voice Note / Audio Button
+                        FilledIconButton(
+                            onClick = {
+                                isRecordingAudio = true
+                            },
+                            modifier = Modifier
+                                .size(46.dp)
+                                .testTag("quick_audio_button"),
+                            colors = IconButtonDefaults.filledIconButtonColors(containerColor = BlueChatPrimary)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Mic,
+                                contentDescription = "Grabar audio rápido",
+                                tint = Color.White,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -333,6 +450,8 @@ private fun MessageBubbleItem(
         RoundedCornerShape(topStart = 4.dp, topEnd = 16.dp, bottomStart = 16.dp, bottomEnd = 16.dp)
     }
 
+    val isAudioMessage = message.textPayload.startsWith("Nota de voz") || message.fileName?.endsWith(".m4a") == true
+
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = if (isOutgoing) Alignment.End else Alignment.Start
@@ -362,7 +481,7 @@ private fun MessageBubbleItem(
             color = bubbleColor,
             shadowElevation = 1.dp,
             modifier = Modifier
-                .widthIn(min = 80.dp, max = 320.dp)
+                .widthIn(min = 100.dp, max = 320.dp)
                 .clickable(enabled = (!isOutgoing && isGeneralChannel)) {
                     onSenderClick()
                 }
@@ -399,12 +518,61 @@ private fun MessageBubbleItem(
                     Spacer(modifier = Modifier.height(4.dp))
                 }
 
-                // Message Text
-                Text(
-                    text = message.textPayload,
-                    style = MaterialTheme.typography.bodyMedium.copy(fontSize = 15.sp),
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+                // Audio message layout or standard text
+                if (isAudioMessage) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(vertical = 4.dp)
+                    ) {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .size(36.dp)
+                                .background(BlueChatPrimary, CircleShape)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PlayArrow,
+                                contentDescription = "Reproducir nota de voz",
+                                tint = Color.White,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        // Waveform visualization bars
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(2.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            val barHeights = listOf(8, 16, 12, 22, 18, 14, 20, 10, 16, 12, 18, 6)
+                            barHeights.forEach { h ->
+                                Box(
+                                    modifier = Modifier
+                                        .width(3.dp)
+                                        .height(h.dp)
+                                        .background(BlueChatPrimary.copy(alpha = 0.8f), RoundedCornerShape(2.dp))
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        Text(
+                            text = message.textPayload.substringAfter("(").substringBefore(")").ifEmpty { "0:05" },
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                } else {
+                    // Standard Message Text
+                    Text(
+                        text = message.textPayload,
+                        style = MaterialTheme.typography.bodyMedium.copy(fontSize = 15.sp),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(2.dp))
 
