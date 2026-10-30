@@ -1,6 +1,9 @@
 package com.example.mesh
 
+import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothManager
 import android.content.Context
+import android.net.wifi.WifiManager
 import android.util.Log
 import com.example.data.model.ChatEntity
 import com.example.data.model.DeadDropEntity
@@ -29,12 +32,19 @@ class MeshEngine(
         private const val TAG = "BlueChatMeshEngine"
     }
 
+    private val bluetoothManager = context.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
+    private val bluetoothAdapter: BluetoothAdapter? = bluetoothManager?.adapter
+    private val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as? WifiManager
+
     private val seenPacketIds = Collections.synchronizedSet(LinkedHashSet<String>())
     private val peerIpMap = ConcurrentHashMap<String, String>()
 
     // Live discovered peers count for Mesh Health Badge
     private val _activeNearbyPeersCount = MutableStateFlow(0)
     val activeNearbyPeersCount: StateFlow<Int> = _activeNearbyPeersCount.asStateFlow()
+
+    private val _channelsState = MutableStateFlow(NetworkChannelsState())
+    val channelsState: StateFlow<NetworkChannelsState> = _channelsState.asStateFlow()
 
     private val bleManager = BleManager(
         context = context,
@@ -86,11 +96,30 @@ class MeshEngine(
         bleManager.setBatterySaverMode(enabled)
     }
 
+    fun refreshChannelsState() {
+        val isBt = try { bluetoothAdapter?.isEnabled == true } catch (e: Exception) { false }
+        val isWifi = try { wifiManager?.isWifiEnabled == true } catch (e: Exception) { false }
+        val isLan = wifiLanBridge.isWifiConnected()
+        val localIp = wifiLanBridge.getLocalIpAddress()
+        val isHotspot = localIp?.startsWith("192.168.43.") == true || localIp?.startsWith("192.168.49.") == true
+
+        _channelsState.value = NetworkChannelsState(
+            isBluetoothEnabled = isBt,
+            isWifiEnabled = isWifi,
+            isRouterLanConnected = isLan && !isHotspot,
+            isHotspotActive = isHotspot,
+            isWifiDirectReady = true,
+            connectedPeersCount = _activeNearbyPeersCount.value,
+            localIp = localIp
+        )
+    }
+
     private fun startPeriodicPresenceBroadcast() {
         scope.launch(Dispatchers.IO) {
             while (true) {
+                refreshChannelsState()
                 broadcastPresence()
-                kotlinx.coroutines.delay(10000)
+                kotlinx.coroutines.delay(6000)
             }
         }
     }
@@ -138,6 +167,7 @@ class MeshEngine(
         // Count peers seen in the last 2 minutes
         val activeCount = users.count { now - it.lastSeen < 120_000 && it.peerId != myPeerId }
         _activeNearbyPeersCount.value = activeCount
+        refreshChannelsState()
     }
 
     fun sendChatMessage(

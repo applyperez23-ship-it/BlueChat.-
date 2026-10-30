@@ -13,6 +13,7 @@ import com.example.data.model.MessageEntity
 import com.example.data.model.UserEntity
 import com.example.data.repository.BlueChatRepository
 import com.example.mesh.MeshEngine
+import com.example.mesh.NetworkChannelsState
 import com.example.server.OfflineApkServer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -128,6 +129,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     )
 
     val activeNearbyPeersCount: StateFlow<Int> = meshEngine.activeNearbyPeersCount
+    val channelsState: StateFlow<NetworkChannelsState> = meshEngine.channelsState
+
+    fun refreshChannels() {
+        meshEngine.refreshChannelsState()
+    }
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     val currentChatMessages: StateFlow<List<MessageEntity>> = _activeChatId.flatMapLatest { chatId ->
@@ -327,13 +333,25 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    private val _callHandshakeInfo = MutableStateFlow<CallHandshakeInfo?>(null)
+    val callHandshakeInfo: StateFlow<CallHandshakeInfo?> = _callHandshakeInfo.asStateFlow()
+
+    fun dismissCallHandshake() {
+        _callHandshakeInfo.value = null
+    }
+
     fun startCall(peerId: String, peerName: String, isVideo: Boolean) {
         viewModelScope.launch(Dispatchers.IO) {
             val user = repository.getUserByPeerId(peerId)
             val ip = user?.ipAddress
-            val started = callEngine.startCall(peerId, peerName, ip, isVideo)
-            if (!started) {
-                _inlineBannerMessage.value = "Contacto fuera de alcance directo para llamada"
+            if (ip.isNullOrBlank()) {
+                // Peer is reached via Bluetooth BLE / mesh hops, but high-speed direct IP (Hotspot or Wi-Fi) is needed for real-time UDP call
+                _callHandshakeInfo.value = CallHandshakeInfo(peerId, peerName, isVideo)
+            } else {
+                val started = callEngine.startCall(peerId, peerName, ip, isVideo)
+                if (!started) {
+                    _callHandshakeInfo.value = CallHandshakeInfo(peerId, peerName, isVideo)
+                }
             }
         }
     }
@@ -366,3 +384,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         apkServer.stop()
     }
 }
+
+data class CallHandshakeInfo(
+    val peerId: String,
+    val peerName: String,
+    val isVideo: Boolean
+)
+

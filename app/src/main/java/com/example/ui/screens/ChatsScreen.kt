@@ -41,6 +41,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -80,13 +81,17 @@ fun ChatsScreen(
             .fillMaxSize()
             .padding(horizontal = 16.dp)
     ) {
-        // Search Bar
+        // Search Bar with 28dp expressive corners
         OutlinedTextField(
             value = searchQuery,
             onValueChange = onSearchQueryChange,
-            placeholder = { Text("Buscar conversaciones...") },
+            placeholder = { Text("Buscar mensajes o contactos...") },
             leadingIcon = {
-                Icon(imageVector = Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             },
             trailingIcon = {
                 if (searchQuery.isNotEmpty()) {
@@ -96,10 +101,10 @@ fun ChatsScreen(
                 }
             },
             singleLine = true,
-            shape = RoundedCornerShape(20.dp),
+            shape = RoundedCornerShape(28.dp),
             colors = OutlinedTextFieldDefaults.colors(
-                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f)
+                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.5f),
+                focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.9f)
             ),
             modifier = Modifier
                 .fillMaxWidth()
@@ -109,9 +114,9 @@ fun ChatsScreen(
 
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            // Pinned Canal General Item
+            // Pinned Canal General Item (Floating Card 28dp)
             item(key = "general_channel") {
                 PinnedGeneralChannelCard(
                     chat = generalChat,
@@ -121,33 +126,56 @@ fun ChatsScreen(
                 )
             }
 
-            if (privateChats.isEmpty() && searchQuery.isNotEmpty()) {
+            if (privateChats.isEmpty()) {
                 item {
-                    Box(
+                    Card(
+                        shape = RoundedCornerShape(28.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.4f)
+                        ),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 40.dp),
-                        contentAlignment = Alignment.Center
+                            .padding(top = 16.dp)
                     ) {
-                        Text(
-                            text = "No se encontraron conversaciones",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Forum,
+                                contentDescription = null,
+                                tint = BlueChatSecondary,
+                                modifier = Modifier.size(36.dp)
+                            )
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Text(
+                                text = if (searchQuery.isNotEmpty()) "No encontramos conversaciones con esa palabra" else "Buscando celulares cercanos...",
+                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = if (searchQuery.isNotEmpty()) "Intenta con otro nombre" else "Escribe en el Canal General o toca en Contactos para iniciar un chat privado.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
+                }
+            } else {
+                items(privateChats, key = { it.chatId }) { chat ->
+                    PrivateChatCard(
+                        chat = chat,
+                        onClick = { onChatClick(chat.chatId, chat.displayName) },
+                        onDelete = { onDeleteChat(chat.chatId) }
+                    )
                 }
             }
 
-            items(privateChats, key = { it.chatId }) { chat ->
-                PrivateChatCard(
-                    chat = chat,
-                    onClick = { onChatClick(chat.chatId, chat.displayName) },
-                    onDelete = { onDeleteChat(chat.chatId) }
-                )
-            }
-
             item {
-                Spacer(modifier = Modifier.height(80.dp))
+                Spacer(modifier = Modifier.height(84.dp))
             }
         }
     }
@@ -159,10 +187,11 @@ private fun PinnedGeneralChannelCard(
     onClick: () -> Unit
 ) {
     Card(
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
+            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
         ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() }
@@ -171,13 +200,13 @@ private fun PinnedGeneralChannelCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(14.dp),
+                .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
-                    .size(52.dp)
+                    .size(54.dp)
                     .background(BlueChatPrimary, CircleShape)
             ) {
                 Icon(
@@ -198,8 +227,8 @@ private fun PinnedGeneralChannelCard(
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = "Canal General",
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                            text = "Canal de la Comunidad",
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Icon(
@@ -210,21 +239,27 @@ private fun PinnedGeneralChannelCard(
                         )
                     }
 
-                    Text(
-                        text = "Frecuencia Libre",
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = BlueChatTertiary
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = BlueChatTertiary.copy(alpha = 0.18f)
+                    ) {
+                        Text(
+                            text = "Para todos",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = BlueChatTertiary
+                            ),
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                         )
-                    )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
-                    text = chat?.lastMessageSnippet?.ifEmpty { "Canal abierto para todos los nodos en alcance" }
-                        ?: "Canal abierto para todos los nodos en alcance",
-                    style = MaterialTheme.typography.bodyMedium,
+                    text = chat?.lastMessageSnippet?.ifEmpty { "Toca aquí para enviar un mensaje a todos los celulares alrededor" }
+                        ?: "Toca aquí para enviar un mensaje a todos los celulares alrededor",
+                    style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 18.sp),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -252,10 +287,11 @@ private fun PrivateChatCard(
     }
 
     Card(
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.7f)
         ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() }
@@ -264,24 +300,24 @@ private fun PrivateChatCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
+                .padding(14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Avatar
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
-                    .size(50.dp)
+                    .size(52.dp)
                     .background(avatarBg, CircleShape)
             ) {
                 Text(
                     text = chat.displayName.take(1).uppercase(),
                     color = Color.White,
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
                 )
             }
 
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(14.dp))
 
             Column(modifier = Modifier.weight(1f)) {
                 Row(
@@ -291,7 +327,7 @@ private fun PrivateChatCard(
                 ) {
                     Text(
                         text = chat.displayName,
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -315,10 +351,10 @@ private fun PrivateChatCard(
                         modifier = Modifier.weight(1f)
                     ) {
                         StatusCheckmark(status = chat.lastMessageStatus)
-                        Spacer(modifier = Modifier.width(4.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = chat.lastMessageSnippet.ifEmpty { "Mensaje vacío" },
-                            style = MaterialTheme.typography.bodySmall,
+                            text = chat.lastMessageSnippet.ifEmpty { "Mensaje enviado" },
+                            style = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -337,7 +373,7 @@ private fun PrivateChatCard(
                                     fontWeight = FontWeight.Bold,
                                     color = Color.White
                                 ),
-                                modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp)
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
                             )
                         }
                     }

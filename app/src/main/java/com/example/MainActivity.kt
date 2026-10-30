@@ -18,6 +18,7 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -57,6 +58,12 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import android.content.Intent
+import android.provider.Settings
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
@@ -75,6 +82,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.call.CallState
 import com.example.service.BlueChatForegroundService
 import com.example.ui.MainViewModel
+import com.example.ui.components.ActiveChannelsPill
+import com.example.ui.components.ConnectionPromptBanner
 import com.example.ui.components.EmergencyApkBottomSheet
 import com.example.ui.components.MeshHealthBadge
 import com.example.ui.components.P2PCallOverlay
@@ -175,6 +184,8 @@ fun BlueChatApp(viewModel: MainViewModel) {
     val currentMessages by viewModel.currentChatMessages.collectAsStateWithLifecycle()
     val callLogs by viewModel.callLogs.collectAsStateWithLifecycle()
     val activePeersCount by viewModel.activeNearbyPeersCount.collectAsStateWithLifecycle()
+    val channelsState by viewModel.channelsState.collectAsStateWithLifecycle()
+    val callHandshakeInfo by viewModel.callHandshakeInfo.collectAsStateWithLifecycle()
 
     val myPeerId = viewModel.myPeerId
     val myNickname by viewModel.myNickname.collectAsStateWithLifecycle()
@@ -238,7 +249,7 @@ fun BlueChatApp(viewModel: MainViewModel) {
                                     )
                                 )
                                 Spacer(modifier = Modifier.width(10.dp))
-                                MeshHealthBadge(activePeersCount = activePeersCount)
+                                ActiveChannelsPill(channelsState = channelsState)
                             }
                         },
                         actions = {
@@ -297,13 +308,24 @@ fun BlueChatApp(viewModel: MainViewModel) {
                 }
             }
         ) { innerPadding ->
-            Box(
+            Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
             ) {
-                // Adaptive layout: Split Pane on wide screens, Single Pane on Compact
-                if (isExpandedLayout) {
+                if (activeChatId == null) {
+                    ConnectionPromptBanner(
+                        channelsState = channelsState
+                    )
+                }
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                ) {
+                    // Adaptive layout: Split Pane on wide screens, Single Pane on Compact
+                    if (isExpandedLayout) {
                     Row(modifier = Modifier.fillMaxSize()) {
                         // Left List Pane
                         Box(modifier = Modifier.weight(0.42f)) {
@@ -424,7 +446,7 @@ fun BlueChatApp(viewModel: MainViewModel) {
                 }
 
                 // Non-intrusive Inline Banner Notice
-                AnimatedVisibility(
+                androidx.compose.animation.AnimatedVisibility(
                     visible = inlineBanner != null,
                     enter = slideInVertically(initialOffsetY = { -it }) + fadeIn(),
                     exit = slideOutVertically(targetOffsetY = { -it }) + fadeOut(),
@@ -472,6 +494,67 @@ fun BlueChatApp(viewModel: MainViewModel) {
             }
         }
     }
+}
+
+    // Call Handshake Assistant Dialog (when peer is connected via Bluetooth only)
+    if (callHandshakeInfo != null) {
+        val handshake = callHandshakeInfo!!
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissCallHandshake() },
+            title = {
+                Text(
+                    text = "Conexión de alta velocidad",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                )
+            },
+            text = {
+                Text(
+                    text = "Para hablar o hacer videollamadas en vivo con ${handshake.peerName}, ambos celulares deben conectarse a la misma red Wi-Fi o a la Zona Wi-Fi de uno de ellos (100% offline, sin gastar datos).\n\n¿Deseas activar la Zona Wi-Fi o abrir los ajustes de Wi-Fi?",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.dismissCallHandshake()
+                        try {
+                            val intent = Intent("android.settings.TETHER_SETTINGS")
+                            context.startActivity(intent)
+                        } catch (e: Exception) {
+                            try {
+                                val intent = Intent(Settings.ACTION_WIRELESS_SETTINGS)
+                                context.startActivity(intent)
+                            } catch (ignored: Exception) {}
+                        }
+                    },
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Text("Activar Zona Wi-Fi")
+                }
+            },
+            dismissButton = {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    TextButton(onClick = { viewModel.dismissCallHandshake() }) {
+                        Text("Cancelar")
+                    }
+                    OutlinedButton(
+                        onClick = {
+                            viewModel.dismissCallHandshake()
+                            try {
+                                val intent = Intent(Settings.ACTION_WIFI_SETTINGS)
+                                context.startActivity(intent)
+                            } catch (ignored: Exception) {}
+                        },
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Text("Ajustes Wi-Fi")
+                    }
+                }
+            },
+            shape = RoundedCornerShape(28.dp),
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+        )
+    }
 
     // Bottom Sheets
     if (showHelp) {
@@ -503,3 +586,4 @@ fun BlueChatApp(viewModel: MainViewModel) {
         )
     }
 }
+

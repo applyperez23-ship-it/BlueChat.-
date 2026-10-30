@@ -86,7 +86,7 @@ fun CallsScreen(
                     )
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = "Las llamadas de voz y video P2P requieren conexión Wi-Fi directa.",
+                        text = "Para hablar o hacer videollamadas con otro celular, ambos pueden conectarse a la misma red Wi-Fi o a la Zona Wi-Fi de uno de ellos.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -95,10 +95,10 @@ fun CallsScreen(
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 item {
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
                 }
 
                 items(callLogs, key = { it.callId }) { log ->
@@ -109,8 +109,11 @@ fun CallsScreen(
                     }
 
                     Card(
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        shape = RoundedCornerShape(28.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.75f)
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
                         modifier = Modifier
                             .fillMaxWidth()
                             .testTag("call_log_item_${log.callId}")
@@ -118,13 +121,13 @@ fun CallsScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(14.dp),
+                                .padding(16.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Box(
                                 contentAlignment = Alignment.Center,
                                 modifier = Modifier
-                                    .size(46.dp)
+                                    .size(48.dp)
                                     .background(BlueChatPrimary.copy(alpha = 0.15f), CircleShape)
                             ) {
                                 Icon(
@@ -135,12 +138,12 @@ fun CallsScreen(
                                 )
                             }
 
-                            Spacer(modifier = Modifier.width(12.dp))
+                            Spacer(modifier = Modifier.width(14.dp))
 
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     text = log.peerName,
-                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                                 )
                                 Spacer(modifier = Modifier.height(3.dp))
                                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -150,9 +153,9 @@ fun CallsScreen(
                                         tint = if (log.isIncoming) BlueChatTertiary else BlueChatPrimary,
                                         modifier = Modifier.size(14.dp)
                                     )
-                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Spacer(modifier = Modifier.width(5.dp))
                                     Text(
-                                        text = "${timeFormat.format(Date(log.timestamp))} • $formattedDuration",
+                                        text = "${timeFormat.format(Date(log.timestamp))} • $formattedDuration • ${if (log.isVideo) "Videollamada" else "Voz directa"}",
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )

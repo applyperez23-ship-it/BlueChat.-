@@ -1,0 +1,60 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Squircle / Rounded M3 Background -->
+    <path
+        android:fillColor="#0A192F"
+        android:pathData="M32,12 C18,12 12,18 12,32 L12,76 C12,90 18,96 32,96 L76,96 C90,96 96,90 96,76 L96,32 C96,18 90,12 76,12 Z" />
+
+    <!-- Subtle inner squircle glow -->
+    <path
+        android:fillColor="#112240"
+        android:pathData="M33,15 C21,15 15,21 15,33 L15,75 C15,87 21,93 33,93 L75,93 C87,93 93,87 93,75 L93,33 C93,21 87,15 75,15 Z" />
+
+    <!-- Stylized Chat Bubble with Smooth Tail -->
+    <path
+        android:fillColor="#0070F3"
+        android:pathData="M54,24 C36.33,24 22,36.54 22,52 C22,60.84 26.68,68.64 34,73.68 L32,84 L43.5,78.25 C46.85,79.38 50.35,80 54,80 C71.67,80 86,67.46 86,52 C86,36.54 71.67,24 54,24 Z" />
+
+    <!-- Chat Bubble Accent Highlight -->
+    <path
+        android:fillColor="#00D2FF"
+        android:pathData="M54,27 C69.46,27 82,38.19 82,52 C82,53.2 81.85,54.38 81.56,55.53 C80.22,41.97 68.25,31.25 53.5,31.25 C39.5,31.25 27.95,41.02 26.2,53.7 C26.78,53.15 27.4,52.62 28.06,52.12 C33.4,37.35 43.1,27 54,27 Z" />
+
+    <!-- Bluetooth Emblem Center Stem & Wings -->
+    <!-- Vertical stem -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3.2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M54,36 L54,68" />
+
+    <!-- Upper loop & Diagonal -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3.2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M46,43 L62,56 L54,63" />
+
+    <!-- Lower loop & Diagonal -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3.2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M46,61 L62,48 L54,41" />
+
+    <!-- Central Node Glow Points -->
+    <path
+        android:fillColor="#00E676"
+        android:pathData="M54,52m-2.2,0a2.2,2.2 0 1,0 4.4,0a2.2,2.2 0 1,0 -4.4,0" />
+
+</vector>

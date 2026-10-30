@@ -248,8 +248,11 @@ private fun RadarPeerCard(
     val avatarBg = avatarColors[Math.abs(peer.peerId.hashCode()) % avatarColors.size]
 
     Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        shape = RoundedCornerShape(28.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.75f)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         modifier = Modifier
             .fillMaxWidth()
             .testTag("radar_peer_${peer.peerId}")
@@ -257,23 +260,23 @@ private fun RadarPeerCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(14.dp),
+                .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
-                    .size(48.dp)
+                    .size(50.dp)
                     .background(avatarBg, CircleShape)
             ) {
                 Text(
                     text = peer.customNickname.take(1).uppercase(),
                     color = Color.White,
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
                 )
             }
 
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(14.dp))
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -282,33 +285,33 @@ private fun RadarPeerCard(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                Spacer(modifier = Modifier.height(2.dp))
+                Spacer(modifier = Modifier.height(3.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(imageVector = Icons.Default.SignalCellularAlt, contentDescription = null, tint = BlueChatTertiary, modifier = Modifier.size(14.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
+                    Icon(imageVector = Icons.Default.SignalCellularAlt, contentDescription = null, tint = BlueChatTertiary, modifier = Modifier.size(15.dp))
+                    Spacer(modifier = Modifier.width(5.dp))
                     Text(
-                        text = if (peer.routingHops <= 1) "Alcance Directo (${peer.rssi} dBm)" else "${peer.routingHops} saltos Mesh",
+                        text = if (peer.routingHops <= 1) "Cerca de ti • Señal directa" else "A ${peer.routingHops} celulares de distancia",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
 
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (!peer.isSaved) {
                     OutlinedButton(
                         onClick = onSave,
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(16.dp),
                         modifier = Modifier.testTag("add_contact_button_${peer.peerId}")
                     ) {
-                        Text("Agregar", fontSize = 12.sp)
+                        Text("Agregar", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                     }
                 }
 
                 Button(
                     onClick = onChat,
                     colors = ButtonDefaults.buttonColors(containerColor = BlueChatPrimary),
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(16.dp),
                     modifier = Modifier.testTag("chat_contact_button_${peer.peerId}")
                 ) {
                     Icon(imageVector = Icons.Default.Chat, contentDescription = null, modifier = Modifier.size(16.dp))
@@ -346,25 +349,28 @@ private fun MisContactosView(
     } else {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             items(savedContacts, key = { it.peerId }) { contact ->
                 val now = System.currentTimeMillis()
                 val statusText = when {
-                    now - contact.lastSeen < 60_000 -> "Cerca"
-                    now - contact.lastSeen < 300_000 -> "En la red"
-                    else -> "Fuera de alcance"
+                    now - contact.lastSeen < 60_000 -> "Al alcance de tu celular"
+                    now - contact.lastSeen < 300_000 -> "En la red de celulares cercanos"
+                    else -> "No conectado por ahora"
                 }
 
-                val statusColor = when (statusText) {
-                    "Cerca" -> BlueChatTertiary
-                    "En la red" -> BlueChatSecondary
+                val statusColor = when {
+                    now - contact.lastSeen < 60_000 -> BlueChatTertiary
+                    now - contact.lastSeen < 300_000 -> BlueChatSecondary
                     else -> MaterialTheme.colorScheme.outlineVariant
                 }
 
                 Card(
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    shape = RoundedCornerShape(28.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.75f)
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { onStartChat(contact.peerId, contact.customNickname) }
@@ -373,14 +379,14 @@ private fun MisContactosView(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(14.dp),
+                            .padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box(
                             contentAlignment = Alignment.Center,
                             modifier = Modifier
-                                .size(46.dp)
-                                .background(BlueChatPrimary.copy(alpha = 0.8f), CircleShape)
+                                .size(48.dp)
+                                .background(BlueChatPrimary.copy(alpha = 0.85f), CircleShape)
                         ) {
                             Text(
                                 text = contact.customNickname.take(1).uppercase(),
@@ -389,18 +395,18 @@ private fun MisContactosView(
                             )
                         }
 
-                        Spacer(modifier = Modifier.width(12.dp))
+                        Spacer(modifier = Modifier.width(14.dp))
 
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = contact.customNickname,
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                             )
-                            Spacer(modifier = Modifier.height(2.dp))
+                            Spacer(modifier = Modifier.height(3.dp))
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Box(
                                     modifier = Modifier
-                                        .size(7.dp)
+                                        .size(8.dp)
                                         .background(statusColor, CircleShape)
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
